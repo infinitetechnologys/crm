@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.full_name }}'s Activity - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ user.full_name }}'s Activity</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('view_staff', id=user.id) }}" class="btn btn-outline">
+            <i class="fas fa-user"></i> View Profile
+        </a>
+        <a href="{{ url_for('activity_log') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Log
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    <!-- User Info Header -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-body">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: {{ user.avatar_color or '#1a365d' }}; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 600;">
+                    {{ user.first_name[0]|upper if user.first_name else user.username[0]|upper }}{{ user.last_name[0]|upper if user.last_name else '' }}
+                </div>
+                <div style="flex: 1;">
+                    <h2 style="margin: 0 0 4px 0;">{{ user.full_name }}</h2>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <span class="badge {% if user.role == 'admin' %}badge-danger{% elif user.role == 'manager' %}badge-warning{% else %}badge-info{% endif %}">
+                            {{ user.role|capitalize }}
+                        </span>
+                        <span class="badge {% if user.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                            {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        {% if user.position %}
+                        <span style="color: var(--text-light);">{{ user.position }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 32px; text-align: center;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ today_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Today</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ week_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">This Week</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">{{ total_count }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Total</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-history" style="margin-right: 8px;"></i>
+                Activity Timeline
+            </h3>
+            <span style="color: var(--text-light); font-size: 0.85rem;">
+                Showing last 200 activities
+            </span>
+        </div>
+        <div class="card-body" style="max-height: 700px; overflow-y: auto;">
+            {% if activities %}
+                <div class="timeline">
+                    {% set current_date = None %}
+                    {% for activity in activities %}
+                        {% set activity_date = activity.created_at.strftime('%Y-%m-%d') %}
+                        {% if activity_date != current_date %}
+                            {% set current_date = activity_date %}
+                            <div style="margin: 24px 0 16px -24px; padding: 8px 16px; background: var(--primary); color: white; border-radius: 4px; font-weight: 600; font-size: 0.85rem; display: inline-block;">
+                                {{ activity.created_at.strftime('%B %d, %Y') }}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-date">
+                                {{ activity.created_at.strftime('%I:%M %p') }}
+                            </div>
+                            <div class="timeline-content">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="badge badge-{{ activity.action_color }}">
+                                        <i class="fas {{ activity.action_icon }}" style="margin-right: 4px;"></i>
+                                        {{ activity.action|replace('_', ' ')|capitalize }}
+                                    </span>
+                                    {% if activity.entity_type %}
+                                    <span class="badge badge-primary">{{ activity.entity_type|capitalize }}</span>
+                                    {% endif %}
+                                </div>
+                                <p style="margin: 0; font-size: 0.9rem;">
+                                    {{ activity.details or activity.entity_name or 'No details' }}
+                                </p>
+                                {% if activity.ip_address %}
+                                <div style="margin-top: 6px; font-size: 0.75rem; color: var(--text-light);">
+                                    <i class="fas fa-globe"></i> IP: {{ activity.ip_address }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <h3>No activities yet</h3>
+                    <p>This user hasn't performed any tracked actions</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

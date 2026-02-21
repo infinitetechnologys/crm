@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Management - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Staff Management</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('add_staff') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Add Staff Member
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Stats Overview -->
+    <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-icon clients">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">{{ staff|length }}</div>
+            <div class="stat-label">Total Staff</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon properties">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="stat-value">{{ staff|selectattr('is_active')|list|length }}</div>
+            <div class="stat-label">Active Staff</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon deals">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <div class="stat-value">{{ staff|selectattr('role', 'equalto', 'admin')|list|length + 1 }}</div>
+            <div class="stat-label">Administrators</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="stat-value">{{ staff|selectattr('role', 'equalto', 'manager')|list|length }}</div>
+            <div class="stat-label">Managers</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="GET" class="filters">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search staff..." value="{{ request.args.get('search', '') }}">
+        </div>
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+        <select name="role" class="form-control" onchange="this.form.submit()">
+            <option value="">All Roles</option>
+            <option value="admin" {% if request.args.get('role') == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="manager" {% if request.args.get('role') == 'manager' %}selected{% endif %}>Manager</option>
+            <option value="staff" {% if request.args.get('role') == 'staff' %}selected{% endif %}>Staff</option>
+        </select>
+        <button type="submit" class="btn btn-outline">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </form>
+
+    {% if staff %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px;">
+        {% for member in staff %}
+        <div class="card" style="overflow: visible;">
+            <div class="card-body">
+                <div style="display: flex; gap: 16px; align-items: flex-start;">
+                    <!-- Avatar -->
+                    <div style="width: 64px; height: 64px; border-radius: 12px; background: {{ member.avatar_color or '#1a365d' }}; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 600; flex-shrink: 0;">
+                        {{ member.first_name[0]|upper if member.first_name else member.username[0]|upper }}{{ member.last_name[0]|upper if member.last_name else '' }}
+                    </div>
+                    
+                    <!-- Info -->
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <h3 style="margin: 0; font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {{ member.full_name }}
+                            </h3>
+                            {% if not member.is_active %}
+                                <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <span class="badge {% if member.role == 'admin' %}badge-primary{% elif member.role == 'manager' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ member.role|capitalize }}
+                            </span>
+                            {% if member.position %}
+                                <span style="color: var(--text-light); font-size: 0.85rem;">{{ member.position }}</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div style="font-size: 0.85rem; color: var(--text-light);">
+                            <div><i class="fas fa-envelope" style="width: 16px;"></i> {{ member.email }}</div>
+                            {% if member.phone %}
+                                <div><i class="fas fa-phone" style="width: 16px;"></i> {{ member.phone }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Stats -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div style="text-align: center;">
+                        <div style="font-weight: 700; color: var(--primary);">{{ staff_stats[member.id].clients }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-light);">Clients</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-weight: 700; color: var(--primary);">{{ staff_stats[member.id].properties }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-light);">Properties</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-weight: 700; color: var(--primary);">{{ staff_stats[member.id].deals }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-light);">Deals</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-weight: 700; color: var(--success);">${{ '{:,.0f}'.format(staff_stats[member.id].commission) }}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-light);">Commission</div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div style="display: flex; gap: 8px; margin-top: 16px;">
+                    <a href="{{ url_for('view_staff', id=member.id) }}" class="btn btn-sm btn-primary" style="flex: 1;">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    <a href="{{ url_for('edit_staff', id=member.id) }}" class="btn btn-sm btn-outline">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('toggle_staff_status', id=member.id) }}" style="margin: 0;">
+                        <button type="submit" class="btn btn-sm btn-outline" title="{{ 'Deactivate' if member.is_active else 'Activate' }}">
+                            <i class="fas {{ 'fa-user-slash' if member.is_active else 'fa-user-check' }}"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No staff members found</h3>
+                    <p>{% if request.args %}Try adjusting your filters{% else %}Add your first staff member{% endif %}</p>
+                    <a href="{{ url_for('add_staff') }}" class="btn btn-primary" style="margin-top: 16px;">
+                        <i class="fas fa-user-plus"></i> Add Staff Member
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Login - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1a365d 0%, #0d1b2a 100%); padding: 20px;">
+    <div style="width: 100%; max-width: 420px;">
+        <div class="card" style="border-radius: 16px; overflow: hidden;">
+            <div style="padding: 40px; text-align: center; background: linear-gradient(135deg, #c9a227 0%, #e8c547 100%);">
+                <div style="font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: #1a365d; display: flex; align-items: center; justify-content: center; gap: 12px;">
+                    <i class="fas fa-building"></i>
+                    <span>EstateFlow</span>
+                </div>
+                <p style="color: #1a365d; opacity: 0.8; margin-top: 8px;">Real Estate CRM</p>
+            </div>
+            
+            <div style="padding: 40px;">
+                <h2 style="text-align: center; margin-bottom: 8px; font-size: 1.5rem;">Welcome Back</h2>
+                <p style="text-align: center; color: var(--text-light); margin-bottom: 32px;">Sign in to your account</p>
+                
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <div style="position: relative;">
+                            <input type="text" name="username" class="form-control" placeholder="Enter your username" required style="padding-left: 44px;">
+                            <i class="fas fa-user" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div style="position: relative;">
+                            <input type="password" name="password" class="form-control" placeholder="Enter your password" required style="padding-left: 44px;">
+                            <i class="fas fa-lock" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 1rem; margin-top: 8px;">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Sign In
+                    </button>
+                </form>
+                
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center;">
+                    <p style="color: var(--text-light); font-size: 0.85rem;">
+                        <i class="fas fa-lock" style="margin-right: 6px;"></i>
+                        Contact your administrator if you need an account
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

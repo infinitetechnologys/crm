@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}{{ member.full_name }} - Staff - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Staff Details</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('edit_staff', id=member.id) }}" class="btn btn-outline">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <form method="POST" action="{{ url_for('toggle_staff_status', id=member.id) }}" style="display: inline;">
+            <button type="submit" class="btn {% if member.is_active %}btn-outline{% else %}btn-primary{% endif %}">
+                <i class="fas {% if member.is_active %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
+                {% if member.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+        </form>
+        <a href="{{ url_for('staff_list') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Profile Header -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="card-body">
+            <div style="display: flex; gap: 24px; align-items: flex-start;">
+                <!-- Avatar -->
+                <div style="width: 100px; height: 100px; border-radius: 16px; background: {{ member.avatar_color or '#1a365d' }}; color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 600; flex-shrink: 0;">
+                    {{ member.first_name[0]|upper if member.first_name else member.username[0]|upper }}{{ member.last_name[0]|upper if member.last_name else '' }}
+                </div>
+                
+                <!-- Info -->
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <h2 style="margin: 0; font-size: 1.5rem;">{{ member.full_name }}</h2>
+                        <span class="badge {% if member.is_active %}badge-success{% else %}badge-danger{% endif %}">
+                            {% if member.is_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                        <span class="badge badge-primary">{{ member.role|capitalize }}</span>
+                    </div>
+                    
+                    {% if member.position %}
+                    <p style="color: var(--text-light); margin: 0 0 16px 0; font-size: 1.1rem;">{{ member.position }}</p>
+                    {% endif %}
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 24px; color: var(--text-light);">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-envelope"></i>
+                            <a href="mailto:{{ member.email }}" style="color: var(--primary); text-decoration: none;">{{ member.email }}</a>
+                        </div>
+                        {% if member.phone %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-phone"></i>
+                            <a href="tel:{{ member.phone }}" style="color: var(--primary); text-decoration: none;">{{ member.phone }}</a>
+                        </div>
+                        {% endif %}
+                        {% if member.hire_date %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-calendar"></i>
+                            <span>Hired {{ member.hire_date.strftime('%B %d, %Y') }}</span>
+                        </div>
+                        {% endif %}
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-percent"></i>
+                            <span>{{ member.commission_rate }}% Commission</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon clients">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">{{ stats.total_clients }}</div>
+            <div class="stat-label">Total Clients</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon properties">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="stat-value">{{ stats.total_properties }}</div>
+            <div class="stat-label">Properties</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon deals">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-value">{{ stats.closed_deals }}</div>
+            <div class="stat-label">Closed Deals</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-value">${{ '{:,.0f}'.format(stats.total_commission) }}</div>
+            <div class="stat-label">Total Commission</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Recent Clients -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Clients</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_clients %}
+                    {% for client in recent_clients %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--background); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--primary);">
+                            {{ client.first_name[0]|upper }}{{ client.last_name[0]|upper }}
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">{{ client.full_name }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">{{ client.email or client.phone or 'No contact' }}</div>
+                        </div>
+                        <span class="badge {% if client.status == 'active' %}badge-success{% elif client.status == 'lead' %}badge-warning{% else %}badge-primary{% endif %}">
+                            {{ client.status|capitalize }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-users" style="font-size: 2rem;"></i>
+                        <h3>No clients yet</h3>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Properties -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Properties</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_properties %}
+                    {% for prop in recent_properties %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); display: flex; align-items: center; justify-content: center; color: white;">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">{{ prop.title }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">{{ prop.city or prop.address }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600; color: var(--primary);">${{ '{:,.0f}'.format(prop.price) }}</div>
+                            <span class="badge {% if prop.status == 'available' %}badge-success{% elif prop.status == 'pending' %}badge-warning{% else %}badge-primary{% endif %}">
+                                {{ prop.status|capitalize }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-home" style="font-size: 2rem;"></i>
+                        <h3>No properties yet</h3>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Deals -->
+    {% if deals %}
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h3 class="card-title">Deal History</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Offer Price</th>
+                            <th>Final Price</th>
+                            <th>Commission</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deal in deals %}
+                        <tr>
+                            <td>
+                                <div style="font-weight: 500;">{{ deal.property.title }}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-light);">{{ deal.property.city or deal.property.address }}</div>
+                            </td>
+                            <td>{{ deal.client.full_name }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if deal.status == 'closed' %}badge-success
+                                    {% elif deal.status == 'under_contract' %}badge-info
+                                    {% elif deal.status == 'negotiation' %}badge-warning
+                                    {% elif deal.status == 'cancelled' %}badge-danger
+                                    {% else %}badge-primary{% endif %}">
+                                    {{ deal.status|replace('_', ' ')|capitalize }}
+                                </span>
+                            </td>
+                            <td>${{ '{:,.0f}'.format(deal.offer_price or 0) }}</td>
+                            <td>
+                                {% if deal.final_price %}
+                                    ${{ '{:,.0f}'.format(deal.final_price) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: 600; color: var(--success);">
+                                ${{ '{:,.0f}'.format(deal.commission_amount) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Account Info -->
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h3 class="card-title">Account Information</h3>
+        </div>
+        <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px;">
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-light); display: block; margin-bottom: 4px;">Username</label>
+                    <span style="font-weight: 500;">{{ member.username }}</span>
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-light); display: block; margin-bottom: 4px;">Account Created</label>
+                    <span>{{ member.created_at.strftime('%B %d, %Y') }}</span>
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-light); display: block; margin-bottom: 4px;">Total Sales Volume</label>
+                    <span style="font-weight: 600; color: var(--primary);">${{ '{:,.0f}'.format(stats.total_sales) }}</span>
+                </div>
+                <div>
+                    <label style="font-size: 0.85rem; color: var(--text-light); display: block; margin-bottom: 4px;">Active Deals</label>
+                    <span style="font-weight: 500;">{{ stats.active_deals }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

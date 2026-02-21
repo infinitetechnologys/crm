@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if deal else 'New' }} Deal - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ 'Edit' if deal else 'New' }} Deal</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('deals') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Deals
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    <div class="card" style="max-width: 800px;">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-handshake" style="margin-right: 8px;"></i>
+                Deal Information
+            </h3>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Client *</label>
+                        <select name="client_id" class="form-control" required>
+                            <option value="">Select client...</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}" {% if deal and deal.client_id == client.id %}selected{% endif %}>
+                                {{ client.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Property *</label>
+                        <select name="property_id" class="form-control" required>
+                            <option value="">Select property...</option>
+                            {% for prop in properties %}
+                            <option value="{{ prop.id }}" {% if deal and deal.property_id == prop.id %}selected{% endif %}>
+                                {{ prop.title }} - ${{ '{:,.0f}'.format(prop.price) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="initiated" {% if deal and deal.status == 'initiated' %}selected{% endif %}>Initiated</option>
+                            <option value="negotiation" {% if deal and deal.status == 'negotiation' %}selected{% endif %}>Negotiation</option>
+                            <option value="under_contract" {% if deal and deal.status == 'under_contract' %}selected{% endif %}>Under Contract</option>
+                            <option value="closed" {% if deal and deal.status == 'closed' %}selected{% endif %}>Closed</option>
+                            <option value="cancelled" {% if deal and deal.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Closing Date</label>
+                        <input type="date" name="closing_date" class="form-control"
+                               value="{{ deal.closing_date.strftime('%Y-%m-%d') if deal and deal.closing_date else '' }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Offer Price ($)</label>
+                        <input type="number" name="offer_price" class="form-control" step="100"
+                               value="{{ deal.offer_price|int if deal and deal.offer_price else '' }}" placeholder="Enter offer price">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Final Price ($)</label>
+                        <input type="number" name="final_price" class="form-control" step="100"
+                               value="{{ deal.final_price|int if deal and deal.final_price else '' }}" placeholder="Final agreed price">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Commission Rate (%)</label>
+                    <input type="number" name="commission_rate" class="form-control" step="0.1" min="0" max="100"
+                           value="{{ deal.commission_rate if deal else '3.0' }}" placeholder="3.0">
+                    <small style="color: var(--text-light);">Your commission percentage from this deal</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="4" placeholder="Additional notes about this deal...">{{ deal.notes if deal else '' }}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 24px;">
+                    <a href="{{ url_for('deals') }}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {{ 'Update' if deal else 'Create' }} Deal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.title }} - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ property.title }}</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('edit_property', id=property.id) }}" class="btn btn-outline">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <button class="btn btn-danger" onclick="confirmDelete()">
+            <i class="fas fa-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Property Header -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0;">
+            <!-- Image -->
+            <div style="height: 350px; background: linear-gradient(135deg, var(--primary-light), var(--primary)); display: flex; align-items: center; justify-content: center; color: white; font-size: 5rem;">
+                {% if property.image_url %}
+                    <img src="{{ property.image_url }}" alt="{{ property.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                    <i class="fas fa-home"></i>
+                {% endif %}
+            </div>
+            <!-- Info -->
+            <div style="padding: 32px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <span class="badge 
+                        {% if property.status == 'available' %}badge-success
+                        {% elif property.status == 'pending' %}badge-warning
+                        {% elif property.status == 'sold' %}badge-primary
+                        {% else %}badge-info{% endif %}">
+                        {{ property.status|capitalize }}
+                    </span>
+                    {% if property.listing_type %}
+                    <span class="badge badge-primary">For {{ property.listing_type|capitalize }}</span>
+                    {% endif %}
+                    {% if property.property_type %}
+                    <span class="badge badge-info">{{ property.property_type|capitalize }}</span>
+                    {% endif %}
+                </div>
+
+                <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary); margin-bottom: 8px;">
+                    ${{ '{:,.0f}'.format(property.price) }}{% if property.listing_type == 'rent' %}<span style="font-size: 1rem; font-weight: 400;">/month</span>{% endif %}
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px; color: var(--text-light); margin-bottom: 24px;">
+                    <i class="fas fa-map-marker-alt"></i>
+                    {{ property.address }}{% if property.city %}, {{ property.city }}{% endif %}{% if property.state %}, {{ property.state }}{% endif %} {{ property.zip_code or '' }}
+                </div>
+
+                <div style="display: flex; gap: 24px; padding: 20px; background: var(--background); border-radius: 8px;">
+                    {% if property.bedrooms %}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ property.bedrooms }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Bedrooms</div>
+                    </div>
+                    {% endif %}
+                    {% if property.bathrooms %}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ property.bathrooms }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Bathrooms</div>
+                    </div>
+                    {% endif %}
+                    {% if property.sqft %}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ '{:,}'.format(property.sqft) }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Sq Ft</div>
+                    </div>
+                    {% endif %}
+                    {% if property.lot_size %}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ property.lot_size }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Acres</div>
+                    </div>
+                    {% endif %}
+                    {% if property.year_built %}
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 600; color: var(--primary);">{{ property.year_built }}</div>
+                        <div style="font-size: 0.85rem; color: var(--text-light);">Year Built</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Description -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Description</h3>
+            </div>
+            <div class="card-body">
+                {% if property.description %}
+                    <p style="white-space: pre-wrap; line-height: 1.6;">{{ property.description }}</p>
+                {% else %}
+                    <p style="color: var(--text-light);">No description provided.</p>
+                {% endif %}
+
+                {% if property.features %}
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 12px; font-size: 1rem;">Features</h4>
+                    <p style="white-space: pre-wrap; line-height: 1.6;">{{ property.features }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Showings -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Scheduled Showings</h3>
+                <button class="btn btn-sm btn-secondary" onclick="openModal('showingModal')">
+                    <i class="fas fa-plus"></i> Schedule
+                </button>
+            </div>
+            <div class="card-body">
+                {% if showings %}
+                    {% for showing in showings %}
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+                            {% if showing.status == 'scheduled' %}background: rgba(49, 130, 206, 0.1); color: var(--info);
+                            {% elif showing.status == 'completed' %}background: rgba(56, 161, 105, 0.1); color: var(--success);
+                            {% elif showing.status == 'cancelled' %}background: rgba(229, 62, 62, 0.1); color: var(--danger);
+                            {% else %}background: rgba(214, 158, 46, 0.1); color: var(--warning);{% endif %}">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">{{ showing.client_name }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">
+                                {{ showing.scheduled_date.strftime('%b %d, %Y at %I:%M %p') }}
+                            </div>
+                            {% if showing.client_phone %}
+                            <div style="font-size: 0.85rem; color: var(--text-light);">
+                                <i class="fas fa-phone" style="font-size: 0.75rem;"></i> {{ showing.client_phone }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <span class="badge 
+                            {% if showing.status == 'scheduled' %}badge-info
+                            {% elif showing.status == 'completed' %}badge-success
+                            {% elif showing.status == 'cancelled' %}badge-danger
+                            {% else %}badge-warning{% endif %}">
+                            {{ showing.status|capitalize }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-calendar" style="font-size: 2rem;"></i>
+                        <h3>No showings scheduled</h3>
+                        <p>Schedule a showing for this property</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Deals -->
+    {% if deals %}
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h3 class="card-title">Related Deals</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Client</th>
+                            <th>Status</th>
+                            <th>Offer Price</th>
+                            <th>Final Price</th>
+                            <th>Closing Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deal in deals %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('view_client', id=deal.client_id) }}" style="font-weight: 500; color: var(--primary); text-decoration: none;">
+                                    {{ deal.client.full_name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if deal.status == 'closed' %}badge-success
+                                    {% elif deal.status == 'under_contract' %}badge-info
+                                    {% elif deal.status == 'negotiation' %}badge-warning
+                                    {% elif deal.status == 'cancelled' %}badge-danger
+                                    {% else %}badge-primary{% endif %}">
+                                    {{ deal.status|replace('_', ' ')|capitalize }}
+                                </span>
+                            </td>
+                            <td>${{ '{:,.0f}'.format(deal.offer_price or 0) }}</td>
+                            <td>${{ '{:,.0f}'.format(deal.final_price) if deal.final_price else '-' }}</td>
+                            <td>{{ deal.closing_date.strftime('%b %d, %Y') if deal.closing_date else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Showing Modal -->
+<div id="showingModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Schedule Showing</h3>
+            <button class="modal-close" onclick="closeModal('showingModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ url_for('add_showing', id=property.id) }}">
+                <div class="form-group">
+                    <label class="form-label">Client Name *</label>
+                    <input type="text" name="client_name" class="form-control" required placeholder="Enter client name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="client_phone" class="form-control" placeholder="(555) 123-4567">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="client_email" class="form-control" placeholder="email@example.com">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date & Time *</label>
+                    <input type="datetime-local" name="scheduled_date" class="form-control" required>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('showingModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus"></i> Schedule
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Form -->
+<form id="deleteForm" method="POST" action="{{ url_for('delete_property', id=property.id) }}" style="display: none;">
+</form>
+
+<style>
+@media (max-width: 768px) {
+    .card > div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete this property? This action cannot be undone.')) {
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+{% endblock %}

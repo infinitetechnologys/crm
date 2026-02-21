@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}{{ client.full_name }} - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ client.full_name }}</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('edit_client', id=client.id) }}" class="btn btn-outline">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        <button class="btn btn-danger" onclick="confirmDelete()">
+            <i class="fas fa-trash"></i> Delete
+        </button>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="grid-2">
+        <!-- Client Info -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Client Information</h3>
+                <span class="badge 
+                    {% if client.status == 'active' %}badge-success
+                    {% elif client.status == 'lead' %}badge-warning
+                    {% elif client.status == 'prospect' %}badge-info
+                    {% else %}badge-primary{% endif %}">
+                    {{ client.status|capitalize }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; gap: 16px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 600;">
+                            {{ client.first_name[0]|upper }}{{ client.last_name[0]|upper }}
+                        </div>
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.25rem;">{{ client.full_name }}</h2>
+                            {% if client.client_type %}
+                                <span class="badge badge-info" style="margin-top: 4px;">{{ client.client_type|capitalize }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; gap: 12px; padding: 16px; background: var(--background); border-radius: 8px;">
+                        {% if client.email %}
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-envelope" style="width: 20px; color: var(--text-light);"></i>
+                            <a href="mailto:{{ client.email }}" style="color: var(--primary); text-decoration: none;">{{ client.email }}</a>
+                        </div>
+                        {% endif %}
+                        {% if client.phone %}
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-phone" style="width: 20px; color: var(--text-light);"></i>
+                            <a href="tel:{{ client.phone }}" style="color: var(--primary); text-decoration: none;">{{ client.phone }}</a>
+                        </div>
+                        {% endif %}
+                        {% if client.preferred_location %}
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-map-marker-alt" style="width: 20px; color: var(--text-light);"></i>
+                            <span>{{ client.preferred_location }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if client.budget_min or client.budget_max %}
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 4px; display: block;">Budget Range</label>
+                        <span style="font-size: 1.25rem; font-weight: 600; color: var(--primary);">
+                            ${{ '{:,.0f}'.format(client.budget_min or 0) }} - ${{ '{:,.0f}'.format(client.budget_max or 0) }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if client.source %}
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 4px; display: block;">Lead Source</label>
+                        <span>{{ client.source|capitalize }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if client.notes %}
+                    <div>
+                        <label style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 4px; display: block;">Notes</label>
+                        <p style="margin: 0; white-space: pre-wrap;">{{ client.notes }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div style="font-size: 0.85rem; color: var(--text-light); padding-top: 12px; border-top: 1px solid var(--border);">
+                        Added on {{ client.created_at.strftime('%B %d, %Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Interactions</h3>
+                <button class="btn btn-sm btn-secondary" onclick="openModal('interactionModal')">
+                    <i class="fas fa-plus"></i> Log Interaction
+                </button>
+            </div>
+            <div class="card-body">
+                {% if interactions %}
+                    <div class="timeline">
+                        {% for interaction in interactions %}
+                        <div class="timeline-item">
+                            <div class="timeline-date">
+                                {{ interaction.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                            </div>
+                            <div class="timeline-content">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="badge 
+                                        {% if interaction.interaction_type == 'call' %}badge-success
+                                        {% elif interaction.interaction_type == 'email' %}badge-info
+                                        {% elif interaction.interaction_type == 'meeting' %}badge-warning
+                                        {% elif interaction.interaction_type == 'showing' %}badge-primary
+                                        {% else %}badge-primary{% endif %}">
+                                        {{ interaction.interaction_type|capitalize if interaction.interaction_type else 'Note' }}
+                                    </span>
+                                    {% if interaction.subject %}
+                                        <strong>{{ interaction.subject }}</strong>
+                                    {% endif %}
+                                </div>
+                                {% if interaction.notes %}
+                                    <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">{{ interaction.notes }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-comments" style="font-size: 2rem;"></i>
+                        <h3>No interactions yet</h3>
+                        <p>Log your first interaction with this client</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Deals -->
+    {% if deals %}
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h3 class="card-title">Deals</h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Status</th>
+                            <th>Offer Price</th>
+                            <th>Final Price</th>
+                            <th>Commission</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deal in deals %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('view_property', id=deal.property_id) }}" style="font-weight: 500; color: var(--primary); text-decoration: none;">
+                                    {{ deal.property.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if deal.status == 'closed' %}badge-success
+                                    {% elif deal.status == 'under_contract' %}badge-info
+                                    {% elif deal.status == 'negotiation' %}badge-warning
+                                    {% elif deal.status == 'cancelled' %}badge-danger
+                                    {% else %}badge-primary{% endif %}">
+                                    {{ deal.status|replace('_', ' ')|capitalize }}
+                                </span>
+                            </td>
+                            <td>${{ '{:,.0f}'.format(deal.offer_price or 0) }}</td>
+                            <td>${{ '{:,.0f}'.format(deal.final_price) if deal.final_price else '-' }}</td>
+                            <td style="font-weight: 600; color: var(--success);">
+                                ${{ '{:,.0f}'.format(deal.commission_amount) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Interaction Modal -->
+<div id="interactionModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Log Interaction</h3>
+            <button class="modal-close" onclick="closeModal('interactionModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ url_for('add_interaction', id=client.id) }}">
+                <div class="form-group">
+                    <label class="form-label">Interaction Type</label>
+                    <select name="interaction_type" class="form-control" required>
+                        <option value="call">Phone Call</option>
+                        <option value="email">Email</option>
+                        <option value="meeting">Meeting</option>
+                        <option value="showing">Property Showing</option>
+                        <option value="note">Note</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <input type="text" name="subject" class="form-control" placeholder="Brief summary...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="4" placeholder="Details of the interaction..."></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('interactionModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Form -->
+<form id="deleteForm" method="POST" action="{{ url_for('delete_client', id=client.id) }}" style="display: none;">
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete() {
+    if (confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+        document.getElementById('deleteForm').submit();
+    }
+}
+</script>
+{% endblock %}

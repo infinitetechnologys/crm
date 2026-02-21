@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Properties - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Properties</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('add_property') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Property
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filters -->
+    <form method="GET" class="filters">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search properties..." value="{{ request.args.get('search', '') }}">
+        </div>
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="available" {% if request.args.get('status') == 'available' %}selected{% endif %}>Available</option>
+            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="sold" {% if request.args.get('status') == 'sold' %}selected{% endif %}>Sold</option>
+            <option value="rented" {% if request.args.get('status') == 'rented' %}selected{% endif %}>Rented</option>
+        </select>
+        <select name="type" class="form-control" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="house" {% if request.args.get('type') == 'house' %}selected{% endif %}>House</option>
+            <option value="apartment" {% if request.args.get('type') == 'apartment' %}selected{% endif %}>Apartment</option>
+            <option value="condo" {% if request.args.get('type') == 'condo' %}selected{% endif %}>Condo</option>
+            <option value="land" {% if request.args.get('type') == 'land' %}selected{% endif %}>Land</option>
+            <option value="commercial" {% if request.args.get('type') == 'commercial' %}selected{% endif %}>Commercial</option>
+        </select>
+        <select name="listing" class="form-control" onchange="this.form.submit()">
+            <option value="">Sale & Rent</option>
+            <option value="sale" {% if request.args.get('listing') == 'sale' %}selected{% endif %}>For Sale</option>
+            <option value="rent" {% if request.args.get('listing') == 'rent' %}selected{% endif %}>For Rent</option>
+        </select>
+        <button type="submit" class="btn btn-outline">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </form>
+
+    {% if properties %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
+            {% for prop in properties %}
+            <div class="property-card">
+                <div class="property-image">
+                    {% if prop.image_url %}
+                        <img src="{{ prop.image_url }}" alt="{{ prop.title }}">
+                    {% else %}
+                        <i class="fas fa-home"></i>
+                    {% endif %}
+                    <div style="position: absolute; top: 12px; left: 12px; display: flex; gap: 8px;">
+                        <span class="badge 
+                            {% if prop.status == 'available' %}badge-success
+                            {% elif prop.status == 'pending' %}badge-warning
+                            {% elif prop.status == 'sold' %}badge-primary
+                            {% else %}badge-info{% endif %}" 
+                            style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px);">
+                            {{ prop.status|capitalize }}
+                        </span>
+                        {% if prop.listing_type %}
+                        <span class="badge badge-primary" style="background: rgba(255,255,255,0.95);">
+                            For {{ prop.listing_type|capitalize }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="property-info">
+                    <div class="property-price">${{ '{:,.0f}'.format(prop.price) }}{% if prop.listing_type == 'rent' %}/mo{% endif %}</div>
+                    <div class="property-title">{{ prop.title }}</div>
+                    <div class="property-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        {{ prop.address }}{% if prop.city %}, {{ prop.city }}{% endif %}
+                    </div>
+                    <div class="property-features">
+                        {% if prop.bedrooms %}
+                        <span><i class="fas fa-bed"></i> {{ prop.bedrooms }} Beds</span>
+                        {% endif %}
+                        {% if prop.bathrooms %}
+                        <span><i class="fas fa-bath"></i> {{ prop.bathrooms }} Baths</span>
+                        {% endif %}
+                        {% if prop.sqft %}
+                        <span><i class="fas fa-ruler-combined"></i> {{ '{:,}'.format(prop.sqft) }} sqft</span>
+                        {% endif %}
+                    </div>
+                    <div style="margin-top: 16px; display: flex; gap: 8px;">
+                        <a href="{{ url_for('view_property', id=prop.id) }}" class="btn btn-sm btn-primary" style="flex: 1;">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="{{ url_for('edit_property', id=prop.id) }}" class="btn btn-sm btn-outline">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fas fa-home"></i>
+                    <h3>No properties found</h3>
+                    <p>{% if request.args %}Try adjusting your filters{% else %}Add your first property listing{% endif %}</p>
+                    <a href="{{ url_for('add_property') }}" class="btn btn-primary" style="margin-top: 16px;">
+                        <i class="fas fa-plus"></i> Add Property
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.property-image {
+    position: relative;
+}
+</style>
+{% endblock %}

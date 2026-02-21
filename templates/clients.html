@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Clients - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Clients</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('add_client') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Client
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filters -->
+    <form method="GET" class="filters">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" name="search" class="form-control" placeholder="Search clients..." value="{{ request.args.get('search', '') }}">
+        </div>
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="lead" {% if request.args.get('status') == 'lead' %}selected{% endif %}>Lead</option>
+            <option value="prospect" {% if request.args.get('status') == 'prospect' %}selected{% endif %}>Prospect</option>
+            <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+            <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Closed</option>
+        </select>
+        <select name="type" class="form-control" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            <option value="buyer" {% if request.args.get('type') == 'buyer' %}selected{% endif %}>Buyer</option>
+            <option value="seller" {% if request.args.get('type') == 'seller' %}selected{% endif %}>Seller</option>
+            <option value="both" {% if request.args.get('type') == 'both' %}selected{% endif %}>Both</option>
+        </select>
+        <button type="submit" class="btn btn-outline">
+            <i class="fas fa-filter"></i> Filter
+        </button>
+    </form>
+
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            {% if clients %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Contact</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Budget</th>
+                                <th>Source</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for client in clients %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('view_client', id=client.id) }}" style="text-decoration: none; color: inherit;">
+                                        <div style="font-weight: 600;">{{ client.full_name }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-light);">
+                                            Added {{ client.created_at.strftime('%b %d, %Y') }}
+                                        </div>
+                                    </a>
+                                </td>
+                                <td>
+                                    <div style="font-size: 0.9rem;">{{ client.email or '-' }}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-light);">{{ client.phone or '-' }}</div>
+                                </td>
+                                <td>
+                                    {% if client.client_type %}
+                                        <span class="badge badge-info">{{ client.client_type|capitalize }}</span>
+                                    {% else %}
+                                        <span style="color: var(--text-light);">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if client.status == 'active' %}badge-success
+                                        {% elif client.status == 'lead' %}badge-warning
+                                        {% elif client.status == 'prospect' %}badge-info
+                                        {% else %}badge-primary{% endif %}">
+                                        {{ client.status|capitalize }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if client.budget_min or client.budget_max %}
+                                        <span style="font-size: 0.9rem;">
+                                            ${{ '{:,.0f}'.format(client.budget_min or 0) }} - ${{ '{:,.0f}'.format(client.budget_max or 0) }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: var(--text-light);">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ client.source|capitalize if client.source else '-' }}</td>
+                                <td>
+                                    <div style="display: flex; gap: 8px;">
+                                        <a href="{{ url_for('view_client', id=client.id) }}" class="btn btn-sm btn-outline" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_client', id=client.id) }}" class="btn btn-sm btn-outline" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-users"></i>
+                    <h3>No clients found</h3>
+                    <p>{% if request.args %}Try adjusting your filters{% else %}Add your first client to get started{% endif %}</p>
+                    <a href="{{ url_for('add_client') }}" class="btn btn-primary" style="margin-top: 16px;">
+                        <i class="fas fa-plus"></i> Add Client
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

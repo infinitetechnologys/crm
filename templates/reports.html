@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Reports & Analytics</h1>
+</div>
+
+<div class="content-area">
+    <!-- Summary Stats -->
+    <div class="stats-grid">
+        {% set total_sales = monthly_data|sum(attribute='total_sales') %}
+        {% set total_commission = monthly_data|sum(attribute='commission') %}
+        {% set total_deals = monthly_data|sum(attribute='deals') %}
+        
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-value">${{ '{:,.0f}'.format(total_sales) }}</div>
+            <div class="stat-label">Total Sales Volume (YTD)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon deals">
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="stat-value">${{ '{:,.0f}'.format(total_commission) }}</div>
+            <div class="stat-label">Total Commission (YTD)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon properties">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-value">{{ total_deals }}</div>
+            <div class="stat-label">Closed Deals (YTD)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon clients">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-value">${{ '{:,.0f}'.format(total_sales / total_deals if total_deals > 0 else 0) }}</div>
+            <div class="stat-label">Average Deal Size</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Monthly Sales Chart -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Monthly Performance</h3>
+            </div>
+            <div class="card-body">
+                <div id="salesChart" style="height: 300px;"></div>
+            </div>
+        </div>
+
+        <!-- Client Sources -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Lead Sources</h3>
+            </div>
+            <div class="card-body">
+                {% if source_data %}
+                    <div id="sourceChart" style="height: 300px;"></div>
+                {% else %}
+                    <div class="empty-state" style="padding: 60px 20px;">
+                        <i class="fas fa-chart-pie" style="font-size: 2rem;"></i>
+                        <h3>No data yet</h3>
+                        <p>Add clients with lead sources to see this chart</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 24px;">
+        <!-- Property Status -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Property Status Breakdown</h3>
+            </div>
+            <div class="card-body">
+                {% if property_status %}
+                    {% set total_properties = property_status|sum(attribute=1) %}
+                    {% for item in property_status %}
+                    {% set status = item[0] %}
+                    {% set count = item[1] %}
+                    <div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 12px; height: 12px; border-radius: 50%;
+                            {% if status == 'available' %}background: var(--success);
+                            {% elif status == 'pending' %}background: var(--warning);
+                            {% elif status == 'sold' %}background: var(--primary);
+                            {% else %}background: var(--info);{% endif %}">
+                        </div>
+                        <div style="flex: 1;">{{ status|capitalize }}</div>
+                        <div style="font-weight: 600;">{{ count }}</div>
+                        <div style="width: 100px; height: 8px; background: var(--background); border-radius: 4px; overflow: hidden;">
+                            <div style="height: 100%; width: {{ (count / total_properties * 100)|round if total_properties > 0 else 0 }}%; 
+                                {% if status == 'available' %}background: var(--success);
+                                {% elif status == 'pending' %}background: var(--warning);
+                                {% elif status == 'sold' %}background: var(--primary);
+                                {% else %}background: var(--info);{% endif %}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <i class="fas fa-home" style="font-size: 2rem;"></i>
+                        <h3>No properties yet</h3>
+                        <p>Add properties to see status breakdown</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Monthly Breakdown Table -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Monthly Breakdown</h3>
+            </div>
+            <div class="card-body" style="padding: 0;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Deals</th>
+                                <th>Sales</th>
+                                <th>Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month in monthly_data %}
+                            <tr>
+                                <td>{{ month.month }}</td>
+                                <td>{{ month.deals }}</td>
+                                <td>${{ '{:,.0f}'.format(month.total_sales) }}</td>
+                                <td style="color: var(--success); font-weight: 500;">${{ '{:,.0f}'.format(month.commission) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Sales Chart
+const monthlyData = {{ monthly_data|tojson }};
+const salesCtx = document.getElementById('salesChart');
+
+if (salesCtx) {
+    const canvas = document.createElement('canvas');
+    salesCtx.appendChild(canvas);
+    
+    new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: monthlyData.map(d => d.month.substring(0, 3)),
+            datasets: [{
+                label: 'Commission',
+                data: monthlyData.map(d => d.commission),
+                backgroundColor: 'rgba(201, 162, 39, 0.8)',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Source Chart
+const sourceData = {{ source_data|tojson if source_data else '[]' }};
+const sourceCtx = document.getElementById('sourceChart');
+
+if (sourceCtx && sourceData.length > 0) {
+    const canvas = document.createElement('canvas');
+    sourceCtx.appendChild(canvas);
+    
+    const colors = [
+        'rgba(26, 54, 93, 0.8)',
+        'rgba(201, 162, 39, 0.8)',
+        'rgba(56, 161, 105, 0.8)',
+        'rgba(49, 130, 206, 0.8)',
+        'rgba(128, 90, 213, 0.8)',
+        'rgba(229, 62, 62, 0.8)',
+        'rgba(214, 158, 46, 0.8)'
+    ];
+    
+    new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+            labels: sourceData.map(d => d[0] ? d[0].charAt(0).toUpperCase() + d[0].slice(1) : 'Unknown'),
+            datasets: [{
+                data: sourceData.map(d => d[1]),
+                backgroundColor: colors.slice(0, sourceData.length),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right'
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

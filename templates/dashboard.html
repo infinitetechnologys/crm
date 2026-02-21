@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Dashboard</h1>
+    <div class="top-actions">
+        <span style="color: var(--text-light); font-size: 0.9rem;">
+            <i class="fas fa-calendar-alt"></i>
+            {{ now().strftime('%B %d, %Y') if now is defined else 'Today' }}
+        </span>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon clients">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">{{ total_clients }}</div>
+            <div class="stat-label">Total Clients</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon properties">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="stat-value">{{ total_properties }}</div>
+            <div class="stat-label">Active Properties</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon deals">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-value">{{ active_deals }}</div>
+            <div class="stat-label">Active Deals</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-value">${{ '{:,.0f}'.format(total_revenue) }}</div>
+            <div class="stat-label">Total Commission</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Recent Clients -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Clients</h3>
+                <a href="{{ url_for('add_client') }}" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-plus"></i> Add New
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_clients %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for client in recent_clients %}
+                                <tr style="cursor: pointer;" onclick="window.location='{{ url_for('view_client', id=client.id) }}'">
+                                    <td>
+                                        <div style="font-weight: 500;">{{ client.full_name }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-light);">{{ client.email or 'No email' }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">{{ client.client_type|capitalize if client.client_type else 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if client.status == 'active' %}badge-success{% elif client.status == 'lead' %}badge-warning{% else %}badge-primary{% endif %}">
+                                            {{ client.status|capitalize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <h3>No clients yet</h3>
+                        <p>Add your first client to get started</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Properties -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Properties</h3>
+                <a href="{{ url_for('add_property') }}" class="btn btn-sm btn-secondary">
+                    <i class="fas fa-plus"></i> Add New
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_properties %}
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Property</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prop in recent_properties %}
+                                <tr style="cursor: pointer;" onclick="window.location='{{ url_for('view_property', id=prop.id) }}'">
+                                    <td>
+                                        <div style="font-weight: 500;">{{ prop.title }}</div>
+                                        <div style="font-size: 0.8rem; color: var(--text-light);">{{ prop.city or prop.address }}</div>
+                                    </td>
+                                    <td style="font-weight: 600; color: var(--primary);">
+                                        ${{ '{:,.0f}'.format(prop.price) }}
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if prop.status == 'available' %}badge-success{% elif prop.status == 'pending' %}badge-warning{% elif prop.status == 'sold' %}badge-primary{% else %}badge-info{% endif %}">
+                                            {{ prop.status|capitalize }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-home"></i>
+                        <h3>No properties yet</h3>
+                        <p>Add your first property listing</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid-2" style="margin-top: 24px;">
+        <!-- Upcoming Tasks -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Upcoming Tasks</h3>
+                <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline">View All</a>
+            </div>
+            <div class="card-body">
+                {% if upcoming_tasks %}
+                    {% for task in upcoming_tasks %}
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+                            {% if task.priority == 'urgent' %}background: rgba(229, 62, 62, 0.1); color: var(--danger);
+                            {% elif task.priority == 'high' %}background: rgba(214, 158, 46, 0.1); color: var(--warning);
+                            {% else %}background: rgba(49, 130, 206, 0.1); color: var(--info);{% endif %}">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">{{ task.title }}</div>
+                            {% if task.due_date %}
+                            <div style="font-size: 0.8rem; color: var(--text-light);">
+                                <i class="fas fa-clock"></i>
+                                Due: {{ task.due_date.strftime('%b %d, %Y at %I:%M %p') }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-check-circle" style="font-size: 2rem;"></i>
+                        <h3>All caught up!</h3>
+                        <p>No pending tasks</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Upcoming Showings -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Upcoming Showings</h3>
+            </div>
+            <div class="card-body">
+                {% if upcoming_showings %}
+                    {% for showing in upcoming_showings %}
+                    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border);">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 161, 105, 0.1); color: var(--success); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500;">{{ showing.property.title }}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">
+                                {{ showing.client_name }} • {{ showing.scheduled_date.strftime('%b %d at %I:%M %p') }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state" style="padding: 30px;">
+                        <i class="fas fa-calendar" style="font-size: 2rem;"></i>
+                        <h3>No showings scheduled</h3>
+                        <p>Schedule a property showing</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

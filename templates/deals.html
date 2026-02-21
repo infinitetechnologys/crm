@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Deals - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Deals</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('add_deal') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Deal
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filters -->
+    <form method="GET" class="filters">
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="initiated" {% if request.args.get('status') == 'initiated' %}selected{% endif %}>Initiated</option>
+            <option value="negotiation" {% if request.args.get('status') == 'negotiation' %}selected{% endif %}>Negotiation</option>
+            <option value="under_contract" {% if request.args.get('status') == 'under_contract' %}selected{% endif %}>Under Contract</option>
+            <option value="closed" {% if request.args.get('status') == 'closed' %}selected{% endif %}>Closed</option>
+            <option value="cancelled" {% if request.args.get('status') == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+    </form>
+
+    <!-- Deal Pipeline -->
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px;">
+        {% set statuses = ['initiated', 'negotiation', 'under_contract', 'closed', 'cancelled'] %}
+        {% set status_colors = {'initiated': '#3182ce', 'negotiation': '#d69e2e', 'under_contract': '#805ad5', 'closed': '#38a169', 'cancelled': '#e53e3e'} %}
+        {% for status in statuses %}
+        {% set count = deals|selectattr('status', 'equalto', status)|list|length %}
+        <div style="text-align: center; padding: 16px; background: var(--card); border-radius: 8px; box-shadow: var(--shadow);">
+            <div style="font-size: 2rem; font-weight: 700; color: {{ status_colors[status] }};">{{ count }}</div>
+            <div style="font-size: 0.85rem; color: var(--text-light); text-transform: capitalize;">{{ status|replace('_', ' ') }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            {% if deals %}
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Client</th>
+                                <th>Status</th>
+                                <th>Offer Price</th>
+                                <th>Final Price</th>
+                                <th>Commission</th>
+                                <th>Closing Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for deal in deals %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('view_property', id=deal.property_id) }}" style="font-weight: 500; color: var(--primary); text-decoration: none;">
+                                        {{ deal.property.title }}
+                                    </a>
+                                    <div style="font-size: 0.8rem; color: var(--text-light);">{{ deal.property.city or deal.property.address }}</div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_client', id=deal.client_id) }}" style="font-weight: 500; color: var(--primary); text-decoration: none;">
+                                        {{ deal.client.full_name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                        {% if deal.status == 'closed' %}badge-success
+                                        {% elif deal.status == 'under_contract' %}badge-info
+                                        {% elif deal.status == 'negotiation' %}badge-warning
+                                        {% elif deal.status == 'cancelled' %}badge-danger
+                                        {% else %}badge-primary{% endif %}">
+                                        {{ deal.status|replace('_', ' ')|capitalize }}
+                                    </span>
+                                </td>
+                                <td>${{ '{:,.0f}'.format(deal.offer_price or 0) }}</td>
+                                <td>
+                                    {% if deal.final_price %}
+                                        <span style="font-weight: 600;">${{ '{:,.0f}'.format(deal.final_price) }}</span>
+                                    {% else %}
+                                        <span style="color: var(--text-light);">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600; color: var(--success);">
+                                        ${{ '{:,.0f}'.format(deal.commission_amount) }}
+                                    </span>
+                                    <div style="font-size: 0.75rem; color: var(--text-light);">{{ deal.commission_rate }}%</div>
+                                </td>
+                                <td>
+                                    {% if deal.closing_date %}
+                                        {{ deal.closing_date.strftime('%b %d, %Y') }}
+                                    {% else %}
+                                        <span style="color: var(--text-light);">TBD</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('edit_deal', id=deal.id) }}" class="btn btn-sm btn-outline">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-handshake"></i>
+                    <h3>No deals yet</h3>
+                    <p>Create your first deal to track transactions</p>
+                    <a href="{{ url_for('add_deal') }}" class="btn btn-primary" style="margin-top: 16px;">
+                        <i class="fas fa-plus"></i> New Deal
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    div[style*="grid-template-columns: repeat(5, 1fr)"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+</style>
+{% endblock %}

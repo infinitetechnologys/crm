@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Tasks - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Tasks</h1>
+    <div class="top-actions">
+        <button class="btn btn-primary" onclick="openModal('taskModal')">
+            <i class="fas fa-plus"></i> Add Task
+        </button>
+    </div>
+</div>
+
+<div class="content-area">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <i class="fas {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Filters -->
+    <form method="GET" class="filters">
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+        </select>
+        <select name="priority" class="form-control" onchange="this.form.submit()">
+            <option value="">All Priorities</option>
+            <option value="urgent" {% if request.args.get('priority') == 'urgent' %}selected{% endif %}>Urgent</option>
+            <option value="high" {% if request.args.get('priority') == 'high' %}selected{% endif %}>High</option>
+            <option value="medium" {% if request.args.get('priority') == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="low" {% if request.args.get('priority') == 'low' %}selected{% endif %}>Low</option>
+        </select>
+    </form>
+
+    <div class="card">
+        <div class="card-body" style="padding: 0;">
+            {% if tasks %}
+                {% for task in tasks %}
+                <div style="display: flex; align-items: flex-start; gap: 16px; padding: 20px 24px; border-bottom: 1px solid var(--border); {% if task.status == 'completed' %}opacity: 0.6;{% endif %}">
+                    <!-- Toggle Button -->
+                    <form method="POST" action="{{ url_for('toggle_task', id=task.id) }}" style="margin: 0;">
+                        <button type="submit" style="width: 24px; height: 24px; border-radius: 50%; border: 2px solid {% if task.status == 'completed' %}var(--success){% else %}var(--border){% endif %}; background: {% if task.status == 'completed' %}var(--success){% else %}transparent{% endif %}; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            {% if task.status == 'completed' %}
+                                <i class="fas fa-check" style="color: white; font-size: 0.75rem;"></i>
+                            {% endif %}
+                        </button>
+                    </form>
+                    
+                    <!-- Task Content -->
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+                            <span style="font-weight: 600; {% if task.status == 'completed' %}text-decoration: line-through;{% endif %}">
+                                {{ task.title }}
+                            </span>
+                            <span class="badge 
+                                {% if task.priority == 'urgent' %}badge-danger
+                                {% elif task.priority == 'high' %}badge-warning
+                                {% elif task.priority == 'medium' %}badge-info
+                                {% else %}badge-primary{% endif %}">
+                                {{ task.priority|capitalize }}
+                            </span>
+                        </div>
+                        {% if task.description %}
+                        <p style="margin: 0 0 8px 0; color: var(--text-light); font-size: 0.9rem;">{{ task.description }}</p>
+                        {% endif %}
+                        <div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-light);">
+                            {% if task.due_date %}
+                            <span title="Due date">
+                                <i class="fas fa-clock"></i>
+                                {{ task.due_date.strftime('%b %d, %Y at %I:%M %p') }}
+                            </span>
+                            {% endif %}
+                            {% if task.completed_at %}
+                            <span style="color: var(--success);">
+                                <i class="fas fa-check-circle"></i>
+                                Completed {{ task.completed_at.strftime('%b %d') }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Delete Button -->
+                    <form method="POST" action="{{ url_for('delete_task', id=task.id) }}" style="margin: 0;">
+                        <button type="submit" class="btn btn-sm btn-outline" style="color: var(--danger);" onclick="return confirm('Delete this task?')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tasks"></i>
+                    <h3>No tasks found</h3>
+                    <p>{% if request.args %}Try adjusting your filters{% else %}Create your first task{% endif %}</p>
+                    <button class="btn btn-primary" style="margin-top: 16px;" onclick="openModal('taskModal')">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="modal-backdrop">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Add New Task</h3>
+            <button class="modal-close" onclick="closeModal('taskModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="{{ url_for('add_task') }}">
+                <div class="form-group">
+                    <label class="form-label">Task Title *</label>
+                    <input type="text" name="title" class="form-control" required placeholder="What needs to be done?">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="3" placeholder="Additional details..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-control">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Due Date</label>
+                        <input type="datetime-local" name="due_date" class="form-control">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('taskModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Add Task
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set current datetime for now variable
+const now = new Date();
+</script>
+{% endblock %}

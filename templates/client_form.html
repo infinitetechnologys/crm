@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if client else 'Add' }} Client - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ 'Edit' if client else 'Add New' }} Client</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('clients') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Clients
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    <div class="card" style="max-width: 900px;">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-user" style="margin-right: 8px;"></i>
+                Client Information
+            </h3>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <input type="text" name="first_name" class="form-control" required
+                               value="{{ client.first_name if client else '' }}" placeholder="Enter first name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <input type="text" name="last_name" class="form-control" required
+                               value="{{ client.last_name if client else '' }}" placeholder="Enter last name">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control"
+                               value="{{ client.email if client else '' }}" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="phone" class="form-control"
+                               value="{{ client.phone if client else '' }}" placeholder="(555) 123-4567">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Client Type</label>
+                        <select name="client_type" class="form-control">
+                            <option value="">Select type...</option>
+                            <option value="buyer" {% if client and client.client_type == 'buyer' %}selected{% endif %}>Buyer</option>
+                            <option value="seller" {% if client and client.client_type == 'seller' %}selected{% endif %}>Seller</option>
+                            <option value="both" {% if client and client.client_type == 'both' %}selected{% endif %}>Both (Buyer & Seller)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-control">
+                            <option value="lead" {% if client and client.status == 'lead' %}selected{% endif %}>Lead</option>
+                            <option value="prospect" {% if client and client.status == 'prospect' %}selected{% endif %}>Prospect</option>
+                            <option value="active" {% if client and client.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="closed" {% if client and client.status == 'closed' %}selected{% endif %}>Closed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Budget Min ($)</label>
+                        <input type="number" name="budget_min" class="form-control" step="1000"
+                               value="{{ client.budget_min|int if client and client.budget_min else '' }}" placeholder="e.g., 200000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Budget Max ($)</label>
+                        <input type="number" name="budget_max" class="form-control" step="1000"
+                               value="{{ client.budget_max|int if client and client.budget_max else '' }}" placeholder="e.g., 500000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Preferred Location</label>
+                        <input type="text" name="preferred_location" class="form-control"
+                               value="{{ client.preferred_location if client else '' }}" placeholder="e.g., Downtown, Suburbs">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Lead Source</label>
+                        <select name="source" class="form-control">
+                            <option value="">Select source...</option>
+                            <option value="referral" {% if client and client.source == 'referral' %}selected{% endif %}>Referral</option>
+                            <option value="website" {% if client and client.source == 'website' %}selected{% endif %}>Website</option>
+                            <option value="social" {% if client and client.source == 'social' %}selected{% endif %}>Social Media</option>
+                            <option value="zillow" {% if client and client.source == 'zillow' %}selected{% endif %}>Zillow</option>
+                            <option value="realtor" {% if client and client.source == 'realtor' %}selected{% endif %}>Realtor.com</option>
+                            <option value="open_house" {% if client and client.source == 'open_house' %}selected{% endif %}>Open House</option>
+                            <option value="cold_call" {% if client and client.source == 'cold_call' %}selected{% endif %}>Cold Call</option>
+                            <option value="other" {% if client and client.source == 'other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-control" rows="4" placeholder="Additional notes about this client...">{{ client.notes if client else '' }}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 24px;">
+                    <a href="{{ url_for('clients') }}" class="btn btn-outline">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {{ 'Update' if client else 'Save' }} Client
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

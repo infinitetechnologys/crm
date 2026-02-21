@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit' if property else 'Add' }} Property - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">{{ 'Edit' if property else 'Add New' }} Property</h1>
+    <div class="top-actions">
+        <a href="{{ url_for('properties') }}" class="btn btn-outline">
+            <i class="fas fa-arrow-left"></i> Back to Properties
+        </a>
+    </div>
+</div>
+
+<div class="content-area">
+    <form method="POST">
+        <div class="grid-2">
+            <!-- Basic Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-info-circle" style="margin-right: 8px;"></i>
+                        Basic Information
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Property Title *</label>
+                        <input type="text" name="title" class="form-control" required
+                               value="{{ property.title if property else '' }}" placeholder="e.g., Beautiful 3BR Home in Oak Park">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Property Type</label>
+                            <select name="property_type" class="form-control">
+                                <option value="">Select type...</option>
+                                <option value="house" {% if property and property.property_type == 'house' %}selected{% endif %}>House</option>
+                                <option value="apartment" {% if property and property.property_type == 'apartment' %}selected{% endif %}>Apartment</option>
+                                <option value="condo" {% if property and property.property_type == 'condo' %}selected{% endif %}>Condo</option>
+                                <option value="townhouse" {% if property and property.property_type == 'townhouse' %}selected{% endif %}>Townhouse</option>
+                                <option value="land" {% if property and property.property_type == 'land' %}selected{% endif %}>Land</option>
+                                <option value="commercial" {% if property and property.property_type == 'commercial' %}selected{% endif %}>Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Listing Type</label>
+                            <select name="listing_type" class="form-control">
+                                <option value="sale" {% if property and property.listing_type == 'sale' %}selected{% endif %}>For Sale</option>
+                                <option value="rent" {% if property and property.listing_type == 'rent' %}selected{% endif %}>For Rent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Price ($) *</label>
+                            <input type="number" name="price" class="form-control" required step="100"
+                                   value="{{ property.price|int if property else '' }}" placeholder="e.g., 350000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-control">
+                                <option value="available" {% if property and property.status == 'available' %}selected{% endif %}>Available</option>
+                                <option value="pending" {% if property and property.status == 'pending' %}selected{% endif %}>Pending</option>
+                                <option value="sold" {% if property and property.status == 'sold' %}selected{% endif %}>Sold</option>
+                                <option value="rented" {% if property and property.status == 'rented' %}selected{% endif %}>Rented</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Image URL</label>
+                        <input type="url" name="image_url" class="form-control"
+                               value="{{ property.image_url if property else '' }}" placeholder="https://example.com/image.jpg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-map-marker-alt" style="margin-right: 8px;"></i>
+                        Location
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Street Address *</label>
+                        <input type="text" name="address" class="form-control" required
+                               value="{{ property.address if property else '' }}" placeholder="123 Main Street">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">City</label>
+                            <input type="text" name="city" class="form-control"
+                                   value="{{ property.city if property else '' }}" placeholder="City name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">State</label>
+                            <input type="text" name="state" class="form-control"
+                                   value="{{ property.state if property else '' }}" placeholder="State">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">ZIP Code</label>
+                        <input type="text" name="zip_code" class="form-control"
+                               value="{{ property.zip_code if property else '' }}" placeholder="12345">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Details -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-list-ul" style="margin-right: 8px;"></i>
+                        Property Details
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Bedrooms</label>
+                            <input type="number" name="bedrooms" class="form-control" min="0"
+                                   value="{{ property.bedrooms if property else '' }}" placeholder="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Bathrooms</label>
+                            <input type="number" name="bathrooms" class="form-control" min="0" step="0.5"
+                                   value="{{ property.bathrooms if property else '' }}" placeholder="2">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Square Feet</label>
+                            <input type="number" name="sqft" class="form-control" min="0"
+                                   value="{{ property.sqft if property else '' }}" placeholder="1800">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lot Size (acres)</label>
+                            <input type="number" name="lot_size" class="form-control" min="0" step="0.01"
+                                   value="{{ property.lot_size if property else '' }}" placeholder="0.25">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Year Built</label>
+                        <input type="number" name="year_built" class="form-control" min="1800" max="2025"
+                               value="{{ property.year_built if property else '' }}" placeholder="2005">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description & Features -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-align-left" style="margin-right: 8px;"></i>
+                        Description & Features
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="4" 
+                                  placeholder="Describe the property...">{{ property.description if property else '' }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Features</label>
+                        <textarea name="features" class="form-control" rows="3" 
+                                  placeholder="List features (e.g., Hardwood floors, Updated kitchen, Central A/C)">{{ property.features if property else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+            <a href="{{ url_for('properties') }}" class="btn btn-outline">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                {{ 'Update' if property else 'Save' }} Property
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

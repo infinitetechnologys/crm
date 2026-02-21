@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Activity Log - EstateFlow CRM{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+    <h1 class="page-title">Activity Log</h1>
+    <div class="top-actions">
+        <span style="color: var(--text-light); font-size: 0.9rem;">
+            <i class="fas fa-clock"></i> Real-time staff monitoring
+        </span>
+    </div>
+</div>
+
+<div class="content-area">
+    <!-- Stats -->
+    <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+            <div class="stat-icon clients">
+                <i class="fas fa-calendar-day"></i>
+            </div>
+            <div class="stat-value">{{ today_count }}</div>
+            <div class="stat-label">Activities Today</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon properties">
+                <i class="fas fa-calendar-week"></i>
+            </div>
+            <div class="stat-value">{{ week_count }}</div>
+            <div class="stat-label">This Week</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon deals">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-value">{{ staff|length }}</div>
+            <div class="stat-label">Staff Members</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon revenue">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-value">
+                {% if most_active %}{{ most_active[0].first_name or most_active[0].username }}{% else %}-{% endif %}
+            </div>
+            <div class="stat-label">Most Active (Week)</div>
+        </div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Activity Feed -->
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-stream" style="margin-right: 8px;"></i>
+                    Activity Feed
+                </h3>
+            </div>
+            
+            <!-- Filters -->
+            <div style="padding: 16px 24px; background: var(--background); border-bottom: 1px solid var(--border);">
+                <form method="GET" class="filters" style="margin: 0;">
+                    <select name="user" class="form-control" onchange="this.form.submit()" style="min-width: 150px;">
+                        <option value="">All Staff</option>
+                        {% for member in staff %}
+                        <option value="{{ member.id }}" {% if request.args.get('user') == member.id|string %}selected{% endif %}>
+                            {{ member.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <select name="action" class="form-control" onchange="this.form.submit()">
+                        <option value="">All Actions</option>
+                        <option value="login" {% if request.args.get('action') == 'login' %}selected{% endif %}>Login</option>
+                        <option value="logout" {% if request.args.get('action') == 'logout' %}selected{% endif %}>Logout</option>
+                        <option value="created" {% if request.args.get('action') == 'created' %}selected{% endif %}>Created</option>
+                        <option value="updated" {% if request.args.get('action') == 'updated' %}selected{% endif %}>Updated</option>
+                        <option value="deleted" {% if request.args.get('action') == 'deleted' %}selected{% endif %}>Deleted</option>
+                        <option value="status_change" {% if request.args.get('action') == 'status_change' %}selected{% endif %}>Status Change</option>
+                        <option value="scheduled" {% if request.args.get('action') == 'scheduled' %}selected{% endif %}>Scheduled</option>
+                    </select>
+                    <select name="entity" class="form-control" onchange="this.form.submit()">
+                        <option value="">All Types</option>
+                        <option value="client" {% if request.args.get('entity') == 'client' %}selected{% endif %}>Clients</option>
+                        <option value="property" {% if request.args.get('entity') == 'property' %}selected{% endif %}>Properties</option>
+                        <option value="deal" {% if request.args.get('entity') == 'deal' %}selected{% endif %}>Deals</option>
+                        <option value="task" {% if request.args.get('entity') == 'task' %}selected{% endif %}>Tasks</option>
+                        <option value="showing" {% if request.args.get('entity') == 'showing' %}selected{% endif %}>Showings</option>
+                        <option value="session" {% if request.args.get('entity') == 'session' %}selected{% endif %}>Sessions</option>
+                    </select>
+                    <input type="date" name="date" class="form-control" value="{{ request.args.get('date', '') }}" onchange="this.form.submit()">
+                    {% if request.args %}
+                    <a href="{{ url_for('activity_log') }}" class="btn btn-outline">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <div class="card-body" style="padding: 0; max-height: 600px; overflow-y: auto;">
+                {% if activities %}
+                    {% for activity in activities %}
+                    <div style="display: flex; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--border); align-items: flex-start;">
+                        <!-- User Avatar -->
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: {{ activity.user.avatar_color or '#1a365d' }}; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem; flex-shrink: 0;">
+                            {{ activity.user.first_name[0]|upper if activity.user.first_name else activity.user.username[0]|upper }}{{ activity.user.last_name[0]|upper if activity.user.last_name else '' }}
+                        </div>
+                        
+                        <!-- Activity Info -->
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                <a href="{{ url_for('user_activity_log', user_id=activity.user_id) }}" style="font-weight: 600; color: var(--primary); text-decoration: none;">
+                                    {{ activity.user.full_name }}
+                                </a>
+                                <span class="badge badge-{{ activity.action_color }}">
+                                    <i class="fas {{ activity.action_icon }}" style="margin-right: 4px;"></i>
+                                    {{ activity.action|replace('_', ' ')|capitalize }}
+                                </span>
+                                {% if activity.entity_type %}
+                                <span class="badge badge-primary">{{ activity.entity_type|capitalize }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <p style="margin: 0; color: var(--text-light); font-size: 0.9rem;">
+                                {{ activity.details or activity.entity_name or '' }}
+                            </p>
+                            
+                            <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 0.8rem; color: var(--text-light);">
+                                <span>
+                                    <i class="fas fa-clock"></i>
+                                    {{ activity.created_at.strftime('%b %d, %Y at %I:%M %p') }}
+                                </span>
+                                {% if activity.ip_address %}
+                                <span>
+                                    <i class="fas fa-globe"></i>
+                                    {{ activity.ip_address }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3>No activities found</h3>
+                        <p>{% if request.args %}Try adjusting your filters{% else %}Activities will appear here as staff members work{% endif %}</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Most Active Staff This Week -->
+    {% if most_active %}
+    <div class="card" style="margin-top: 24px;">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-chart-bar" style="margin-right: 8px;"></i>
+                Most Active Staff This Week
+            </h3>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Staff Member</th>
+                            <th>Activities</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for staff_member in most_active %}
+                        <tr>
+                            <td>
+                                <div style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.85rem;
+                                    {% if loop.index == 1 %}background: linear-gradient(135deg, #ffd700, #ffaa00); color: white;
+                                    {% elif loop.index == 2 %}background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: white;
+                                    {% elif loop.index == 3 %}background: linear-gradient(135deg, #cd7f32, #b87333); color: white;
+                                    {% else %}background: var(--background); color: var(--text);{% endif %}">
+                                    {{ loop.index }}
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-weight: 500;">
+                                    {% if staff_member.first_name %}{{ staff_member.first_name }} {{ staff_member.last_name }}{% else %}{{ staff_member.username }}{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span style="font-weight: 600; color: var(--primary);">{{ staff_member.activity_count }}</span> activities
+                            </td>
+                            <td>
+                                <a href="{{ url_for('user_activity_log', user_id=staff_member.id) }}" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
